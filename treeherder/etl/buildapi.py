@@ -169,6 +169,16 @@ class Builds4hTransformerMixin(object):
             else:
                 log_reference = []
 
+            # add structured logs to the list of log references
+            if 'blobber_files' in prop:
+                blobber_files = json.loads(prop['blobber_files'])
+                for bf, url in blobber_files.items():
+                    if bf.endswith('_raw.log'):
+                        log_reference.append({
+                            'url': url,
+                            'name': 'structured-raw'
+                        })
+
             # request_id and request_time are mandatory
             # and they can be found in a couple of different places
             try:

@@ -4,13 +4,30 @@
 
 import re
 import urllib
+import urllib2
+import gzip
+from contextlib import closing
+import io
+import logging
+import time
+import traceback
+import requests
 
+from django.utils.six import BytesIO
 import simplejson as json
-from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from treeherder.log_parser.artifactbuildercollection import \
     ArtifactBuilderCollection
+
+from django.conf import settings
+
+from thclient import TreeherderArtifactCollection, TreeherderRequest
+from treeherder.etl.oauth_utils import OAuthCredentials
+
+from mozlog.structured import reader
+
+logger = logging.getLogger(__name__)
 
 
 def is_helpful_search_term(search_term):
@@ -156,7 +173,7 @@ def extract_log_artifacts(log_url, job_guid, check_errors):
                               json.dumps(artifact)))
     if check_errors:
         all_errors = artifact_bc.artifacts\
-            .get('Structured Log', {})\
+            .get('log_summary', {})\
             .get('step_data', {})\
             .get('all_errors', [])
 
@@ -209,3 +226,122 @@ def extract_log_artifacts(log_url, job_guid, check_errors):
     )
 
     return artifact_list
+
+def post_log_artifacts(project,
+                       job_guid,
+                       job_log_url,
+                       retry_task,
+                       extract_artifacts_cb,
+                       check_errors=False):
+    try:
+        credentials = OAuthCredentials.get_credentials(project)
+        req = TreeherderRequest(
+            protocol=settings.TREEHERDER_REQUEST_PROTOCOL,
+            host=settings.TREEHERDER_REQUEST_HOST,
+            project=project,
+            oauth_key=credentials.get('consumer_key', None),
+            oauth_secret=credentials.get('consumer_secret', None),
+        )
+        update_endpoint = 'job-log-url/{0}/update_parse_status'.format(
+            job_log_url['id']
+        )
+
+        logger.debug("Downloading and extracting log information for guid "
+                     "'%s' (from %s)" % (job_guid, job_log_url['url']))
+
+        artifact_list = extract_artifacts_cb(job_log_url['url'],
+                                             job_guid, check_errors)
+        # store the artifacts generated
+        tac = TreeherderArtifactCollection()
+        for artifact in artifact_list:
+            ta = tac.get_artifact({
+                "job_guid": artifact[0],
+                "name": artifact[1],
+                "type": artifact[2],
+                "blob": artifact[3]
+            })
+            tac.add(ta)
+
+        logger.debug("Finished downloading and processing artifact for guid "
+                     "'%s'" % job_guid)
+
+        req.post(tac)
+
+        # send an update to job_log_url
+        # the job_log_url status changes from pending to parsed
+        current_timestamp = time.time()
+        req.send(
+            update_endpoint,
+            method='POST',
+            data={
+                'parse_status': 'parsed',
+                'parse_timestamp': current_timestamp
+            }
+        )
+
+        logger.debug("Finished posting artifact for guid '%s'" % job_guid)
+
+    except Exception, e:
+        # send an update to job_log_url
+        # the job_log_url status changes from pending/running to failed
+        logger.warn("Failed to download and/or parse artifact for guid '%s'" %
+                    job_guid)
+        logger.error(traceback.format_exc())
+        current_timestamp = time.time()
+        req.send(
+            update_endpoint,
+            method='POST',
+            data={
+                'parse_status': 'failed',
+                'parse_timestamp': current_timestamp
+            }
+        )
+        # Initially retry after 1 minute, then for each subsequent retry
+        # lengthen the retry time by another minute.
+        retry_task.retry(exc=e, countdown=(1 + retry_task.request.retries) * 60)
+        # .retry() raises a RetryTaskError exception,
+        # so nothing below this line will be executed.
+
+
+class FaultSummaryHandler(object):
+    def __init__(self):
+        self.serial = 0
+        self.lines = []
+
+    def is_fault(self, message):
+        try:
+            retval = any(["level" in message and
+                message["level"] in ("ERROR", "WARNING", "CRITICAL"),
+                "expected" in message,
+                message["action"] == "crash"])
+            return retval
+        except:
+            logger.error("structured log parser line exception {0}".format(message))
+            return False
+
+
+    def __call__(self, data):
+        self.serial += 1
+
+        if self.is_fault(data):
+            data['serial'] = self.serial
+            self.lines.append(data)
+
+        return None
+
+
+def extract_struct_log_artifacts(log_url, job_guid, check_errors):
+    handler = FaultSummaryHandler()
+    logger.debug("Parsing structured log at url: {0}".format(log_url))
+
+    fhandle = urllib2.urlopen(
+        log_url,
+        timeout=settings.TREEHERDER_REQUESTS_TIMEOUT
+        )
+
+    with gzip.GzipFile(fileobj=BytesIO(fhandle.read())) as in_f:
+        reader.handle_log(reader.read(in_f), handler)
+
+    return [(job_guid, "structured_faults", "json",
+             json.dumps({"all_errors": handler.lines})
+            )]

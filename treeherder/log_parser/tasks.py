@@ -4,13 +4,13 @@
 
 
 import logging
-import time
-from celery import task
-from django.conf import settings
 
-from thclient import TreeherderArtifactCollection, TreeherderRequest
-from treeherder.log_parser.utils import (extract_log_artifacts)
-from treeherder.etl.oauth_utils import OAuthCredentials
+from celery import task
+
+from treeherder.log_parser.utils import (extract_log_artifacts,
+                                         extract_struct_log_artifacts,
+                                         post_log_artifacts
+                                         )
 
 logger = logging.getLogger(__name__)
 
@@ -27,70 +27,29 @@ def parse_log(project, job_log_url, job_guid, check_errors=False):
     if parse_status == "parsed":
         return
 
-    try:
-        credentials = OAuthCredentials.get_credentials(project)
-        req = TreeherderRequest(
-            protocol=settings.TREEHERDER_REQUEST_PROTOCOL,
-            host=settings.TREEHERDER_REQUEST_HOST,
-            project=project,
-            oauth_key=credentials.get('consumer_key', None),
-            oauth_secret=credentials.get('consumer_secret', None),
-        )
-        update_endpoint = 'job-log-url/{0}/update_parse_status'.format(
-            job_log_url['id']
-        )
+    # logger.warning("<>cam<> running task parse-log")
+    logger.warning("<>cam<> running task parse-log: {0}".format(job_log_url))
+    post_log_artifacts(project,
+                       job_guid,
+                       job_log_url,
+                       parse_log,
+                       extract_log_artifacts,
+                       check_errors
+                       )
 
-        logger.debug("Downloading and extracting log information for guid "
-                     "'%s' (from %s)" % (job_guid, job_log_url['url']))
 
-        artifact_list = extract_log_artifacts(job_log_url['url'],
-                                              job_guid, check_errors)
-        # store the artifacts generated
-        tac = TreeherderArtifactCollection()
-        for artifact in artifact_list:
-            ta = tac.get_artifact({
-                "job_guid": artifact[0],
-                "name": artifact[1],
-                "type": artifact[2],
-                "blob": artifact[3]
-            })
-            tac.add(ta)
-
-        logger.debug("Finished downloading and processing artifact for guid "
-                     "'%s'" % job_guid)
-
-        req.post(tac)
-
-        # send an update to job_log_url
-        # the job_log_url status changes from pending to parsed
-        current_timestamp = time.time()
-        req.send(
-            update_endpoint,
-            method='POST',
-            data={
-                'parse_status': 'parsed',
-                'parse_timestamp': current_timestamp
-            }
-        )
-
-        logger.debug("Finished posting artifact for guid '%s'" % job_guid)
-
-    except Exception, e:
-        # send an update to job_log_url
-        # the job_log_url status changes from pending/running to failed
-        logger.warn("Failed to download and/or parse artifact for guid '%s'" %
-                    job_guid)
-        current_timestamp = time.time()
-        req.send(
-            update_endpoint,
-            method='POST',
-            data={
-                'parse_status': 'failed',
-                'parse_timestamp': current_timestamp
-            }
-        )
-        # Initially retry after 1 minute, then for each subsequent retry
-        # lengthen the retry time by another minute.
-        parse_log.retry(exc=e, countdown=(1 + parse_log.request.retries) * 60)
-        # .retry() raises a RetryTaskError exception,
-        # so nothing below this line will be executed.
+@task(name='format-struct-log', max_retries=10)
+def format_struct_log(project, job_log_url, job_guid, check_errors=False):
+    """
+    Apply the Structured Log Fault Formatter to the structured log for a job.
+    """
+    logger.warning("<>struct<> running task format-struct-log for {0}".format(project))
+    import sys
+    # logger.warning("<>cam<> structured log task running: {0}".format(job_log_url))
+    post_log_artifacts(project,
+                       job_guid,
+                       job_log_url,
+                       format_struct_log,
+                       extract_struct_log_artifacts,
+                       False
+                       )

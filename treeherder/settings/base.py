@@ -194,6 +194,7 @@ CELERY_QUEUES = (
     # this is used to give priority to some logs, for example when we need to
     # parse a log on demand
     Queue('log_parser_hp', Exchange('default'), routing_key='parse_log.high_priority'),
+    Queue('log_parser_struct', Exchange('default'), routing_key='parse_log.structured'),
     # queue for mirroring the sheriffing activity to tbpl
     Queue('high_priority', Exchange('default'), routing_key='high_priority'),
     Queue('pushlog', Exchange('default'), routing_key='pushlog'),
