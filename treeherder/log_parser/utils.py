@@ -6,12 +6,8 @@ import re
 import urllib
 import urllib2
 import gzip
-from contextlib import closing
-import io
 import logging
 import time
-import traceback
-import requests
 
 from django.utils.six import BytesIO
 import simplejson as json
@@ -286,7 +282,6 @@ def post_log_artifacts(project,
         # the job_log_url status changes from pending/running to failed
         logger.warn("Failed to download and/or parse artifact for guid '%s'" %
                     job_guid)
-        logger.error(traceback.format_exc())
         current_timestamp = time.time()
         req.send(
             update_endpoint,
@@ -316,7 +311,7 @@ class FaultSummaryHandler(object):
                 message["action"] == "crash"])
             return retval
         except:
-            logger.error("structured log parser line exception {0}".format(message))
+            logger.warning("FaultSummaryHandler line exception {0}".format(message))
             return False
 
 

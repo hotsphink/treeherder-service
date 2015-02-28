@@ -27,8 +27,6 @@ def parse_log(project, job_log_url, job_guid, check_errors=False):
     if parse_status == "parsed":
         return
 
-    # logger.warning("<>cam<> running task parse-log")
-    logger.warning("<>cam<> running task parse-log: {0}".format(job_log_url))
     post_log_artifacts(project,
                        job_guid,
                        job_log_url,
@@ -38,18 +36,15 @@ def parse_log(project, job_log_url, job_guid, check_errors=False):
                        )
 
 
-@task(name='format-struct-log', max_retries=10)
-def format_struct_log(project, job_log_url, job_guid, check_errors=False):
+@task(name='parse-struct-log', max_retries=10)
+def parse_struct_log(project, job_log_url, job_guid, check_errors=False):
     """
     Apply the Structured Log Fault Formatter to the structured log for a job.
     """
-    logger.warning("<>struct<> running task format-struct-log for {0}".format(project))
-    import sys
-    # logger.warning("<>cam<> structured log task running: {0}".format(job_log_url))
     post_log_artifacts(project,
                        job_guid,
                        job_log_url,
-                       format_struct_log,
+                       parse_struct_log,
                        extract_struct_log_artifacts,
-                       False
+                       check_errors
                        )

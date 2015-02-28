@@ -1917,7 +1917,7 @@ into chunks of chunk_size size. Returns the number of result sets deleted"""
                        job_results):
 
         # importing here to avoid an import loop
-        from treeherder.log_parser.tasks import parse_log, format_struct_log
+        from treeherder.log_parser.tasks import parse_log, parse_struct_log
 
         tasks = []
 
@@ -1978,28 +1978,26 @@ into chunks of chunk_size size. Returns the number of result sets deleted"""
                                    for jlu in job_log_url_list])
 
             for task in tasks:
+                task_args= [
+                    self.project,
+                    log_url_lookup[task['log_url']],
+                    task['job_guid'],
+                ]
+                task_kwargs={'check_errors': task['check_errors']}
+
                 if task['routing_key'] == "parse_log.structured":
-                    logger.warning("<>struct<> scheduling async for {0}".format(self.project))
-                    format_struct_log.apply_async(
-                        args=[
-                            self.project,
-                            log_url_lookup[task['log_url']],
-                            task['job_guid'],
-                        ],
-                        kwargs={'check_errors': task['check_errors']},
+                    parse_struct_log.apply_async(
+                        args=task_args,
+                        kwargs=task_kwargs,
                         routing_key=task['routing_key']
-                    )
+                        )
 
                 else:
                     parse_log.apply_async(
-                        args=[
-                            self.project,
-                            log_url_lookup[task['log_url']],
-                            task['job_guid'],
-                        ],
-                        kwargs={'check_errors': task['check_errors']},
+                        args=task_args,
+                        kwargs=task_kwargs,
                         routing_key=task['routing_key']
-                    )
+                        )
 
     def get_job_log_url_detail(self, job_log_url_id):
         obj = self.jobs_execute(
