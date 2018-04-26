@@ -13,6 +13,7 @@ import {
 } from '../helpers/jobHelper';
 import PushLoadErrors from './PushLoadErrors';
 import { thEvents } from "../js/constants";
+import { withPinBoard } from '../context/PinBoardContext';
 
 export default class PushList extends React.Component {
 
@@ -24,7 +25,6 @@ export default class PushList extends React.Component {
     this.$location = $injector.get('$location');
     this.$timeout = $injector.get('$timeout');
     this.thNotify = $injector.get('thNotify');
-    this.thPinboard = $injector.get('thPinboard');
     this.thJobFilters = $injector.get('thJobFilters');
     this.ThResultSetStore = $injector.get('ThResultSetStore');
     this.ThResultSetModel = $injector.get('ThResultSetModel');
@@ -188,7 +188,7 @@ export default class PushList extends React.Component {
     // on the component directly.
     //
     // Filter the list of possible jobs down to ONLY ones in the .th-view-content
-    // div (excluding pinboard) and then to the specific selector passed
+    // div (excluding pinBoard) and then to the specific selector passed
     // in.  And then to only VISIBLE (not filtered away) jobs.  The exception
     // is for the .selected-job.  If that's not visible, we still want to
     // include it, because it is the anchor from which we find
@@ -256,10 +256,10 @@ export default class PushList extends React.Component {
 
   // Clear the job if it occurs in a particular area
   clearJobOnClick(event) {
-      // Suppress for various UI elements so selection is preserved
+    // Suppress for various UI elements so selection is preserved
     const ignoreClear = event.target.hasAttribute("data-ignore-job-clear-on-click");
 
-    if (!ignoreClear && !this.thPinboard.hasPinnedJobs()) {
+    if (!ignoreClear && !this.props.pinBoard.pinnedJobs.length) {
       const selected = findSelectedInstance();
       if (selected) {
         selected.setSelected(false);
@@ -271,7 +271,7 @@ export default class PushList extends React.Component {
   render() {
     const { $injector, user, repoName, revision, currentRepo } = this.props;
     const { pushList, loadingPushes, jobsReady } = this.state;
-    const { loggedin, is_staff } = user;
+    const { isLoggedIn, isStaff } = user;
 
     return (
       <div onClick={this.clearJobOnClick}>
@@ -279,8 +279,8 @@ export default class PushList extends React.Component {
         {repoName && pushList.map(push => (
           <Push
             push={push}
-            loggedIn={loggedin || false}
-            isStaff={is_staff}
+            isLoggedIn={isLoggedIn || false}
+            isStaff={isStaff}
             repoName={repoName}
             $injector={$injector}
             key={push.id}
@@ -319,6 +319,7 @@ export default class PushList extends React.Component {
 
 PushList.propTypes = {
   $injector: PropTypes.object.isRequired,
+  pinBoard: PropTypes.object.isRequired,
   repoName: PropTypes.string.isRequired,
   user: PropTypes.object.isRequired,
   revision: PropTypes.string,
@@ -331,6 +332,6 @@ PushList.defaultProps = {
 };
 
 treeherder.component('pushList', react2angular(
-  PushList,
+  withPinBoard(PushList),
   ['repoName', 'user', 'revision', 'currentRepo'],
   ['$injector']));

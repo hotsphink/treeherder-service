@@ -2,13 +2,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Highlighter from 'react-highlight-words';
 
-import { getBugUrl } from "../../helpers/urlHelper";
-import { getSearchWords } from "../../helpers/displayHelper";
+import { getBugUrl } from "../../../../helpers/urlHelper";
+import { getSearchWords } from "../../../../helpers/displayHelper";
+import { withPinBoard } from '../../../../context/PinBoardContext';
 
 /**
  * Non-editable best option
  */
-export default function StaticLineOption(props) {
+function StaticLineOption(props) {
   const {
     job,
     canClassify,
@@ -97,3 +98,5 @@ StaticLineOption.propTypes = {
 StaticLineOption.defaultProps = {
   manualBugNumber: undefined,
 };
+
+export default withPinBoard(StaticLineOption);

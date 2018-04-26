@@ -5,15 +5,16 @@ import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 import Highlighter from 'react-highlight-words';
 
-import { getBugUrl, getLogViewerUrl, getReftestUrl } from "../../helpers/urlHelper";
-import { isReftest } from "../../helpers/jobHelper";
-import { getSearchWords } from "../../helpers/displayHelper";
-import intermittentTemplate from '../../partials/main/intermittent.html';
+import { getBugUrl, getLogViewerUrl, getReftestUrl } from "../../../../helpers/urlHelper";
+import { isReftest } from "../../../../helpers/jobHelper";
+import { getSearchWords } from "../../../../helpers/displayHelper";
+import intermittentTemplate from '../../../../partials/main/intermittent.html';
+import { withPinBoard } from '../../../../context/PinBoardContext';
 
 /**
  * Editable option
  */
-export default class LineOption extends React.Component {
+class LineOption extends React.Component {
   constructor(props) {
     super(props);
     const { $injector } = props;
@@ -105,7 +106,7 @@ export default class LineOption extends React.Component {
               className={canClassify ? '' : 'hidden'}
             />}
             {!!option.bugNumber && <span className="line-option-text">
-              {(!canClassify || pinBoard.isPinned(job)) &&
+              {(!canClassify || pinBoard.pinnedJobs.includes(job)) &&
                 <button
                   className="btn btn-xs btn-light-bordered"
                   onClick={() => pinBoard.addBug({ id: option.bugNumber }, job)}
@@ -209,3 +210,5 @@ LineOption.defaultProps = {
   onIgnoreAlwaysChange: null,
   manualBugNumber: undefined,
 };
+
+export default withPinBoard(LineOption);
