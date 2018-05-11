@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { react2angular } from "react2angular/index.es2015";
-import { chunk } from 'lodash';
+import { chunk, flatten } from 'lodash';
 
 import { InjectorContext } from '../../context/InjectorContext';
 import TabsPanel from './tabs-panel/TabsPanel';
@@ -26,6 +26,7 @@ class DetailsPanel extends React.Component {
     this.ThBugSuggestionsModel = $injector.get("ThBugSuggestionsModel");
     this.ThTextLogStepModel = $injector.get("ThTextLogStepModel");
     this.ThJobClassificationModel = $injector.get("ThJobClassificationModel");
+    this.thClassificationTypes = $injector.get("thClassificationTypes");
 
     // this promise will void all the ajax requests
     // triggered by selectJob once resolved
@@ -181,8 +182,7 @@ class DetailsPanel extends React.Component {
       const reftestUrl = jobLogUrls.length ?
         `${getReftestUrl(jobLogUrls[0].url)}&only_show_unexpected=1` :
         '';
-
-      const performanceData = Object.values(results[3]).flatten();
+      const performanceData = flatten(Object.values(results[3]));
 
       let perfJobDetail = [];
       if (performanceData) {
@@ -190,7 +190,7 @@ class DetailsPanel extends React.Component {
         const seriesListList = await Promise.all(chunk(signatureIds, 20).map(
           signatureIdChunk => this.PhSeries.getSeriesList(repoName, { id: signatureIdChunk })
         ));
-        const seriesList = seriesListList.flatten();
+        const seriesList = flatten(seriesListList);
 
         perfJobDetail = performanceData.map(d => ({
           series: seriesList.find(s => d.signature_id === s.id),
@@ -204,7 +204,6 @@ class DetailsPanel extends React.Component {
 
       // set the tab options and selections based on the selected job
       // initializeTabs($scope.job, (Object.keys(performanceData).length > 0));
-
       this.setState({
         jobDetailLoading: false,
         jobLogUrls,
@@ -272,6 +271,7 @@ class DetailsPanel extends React.Component {
             id="pinboard-panel"
             isVisible={isPinBoardVisible}
             isLoggedIn={user.isLoggedIn || false}
+            classificationTypes={this.thClassificationTypes}
           />
           {!!selectedJob && <div id="info-panel-content">
             <SummaryPanel
@@ -296,6 +296,7 @@ class DetailsPanel extends React.Component {
               bugSuggestionsLoading={bugSuggestionsLoading}
               logParseStatus={logParseStatus}
               classifications={classifications}
+              classificationTypes={this.thClassificationTypes}
               jobLogUrls={jobLogUrls}
               isPinBoardVisible={isPinBoardVisible}
               togglePinBoardVisibility={() => this.togglePinBoardVisibility()}

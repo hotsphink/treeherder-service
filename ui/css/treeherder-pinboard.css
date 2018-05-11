@@ -51,7 +51,7 @@
   line-height: 18px;
 }
 
-#pinboard-panel {
+#pinboard-contents {
   background-color: #e6eef5;
   color: #252c33;
   flex: auto;
@@ -166,9 +166,28 @@
   color: black;
 }
 
-#pinboard-classification select {
+.classification-select,
+.classification-select .Select-control {
   width: 177px;
+  height: 20px;
+  font-size: 12px;
+  margin-bottom: 3px;
 }
+
+.classification-select.Select .Select-placeholder,
+.classification-select.Select .Select-value,
+.classification-select.Select .Select-value-label,
+.classification-select.Select .Select-input {
+  line-height: 20px !important;
+  height: 20px;
+}
+
+.classification-option {
+  line-height: 25px !important;
+  height: 25px;
+}
+
+
 
 .add-classification-input {
   width: 177px;

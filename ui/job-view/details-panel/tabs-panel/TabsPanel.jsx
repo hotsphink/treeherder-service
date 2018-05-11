@@ -46,7 +46,6 @@ class TabsPanel extends React.Component {
     const { $injector } = this.props;
 
     this.$rootScope = $injector.get("$rootScope");
-    this.thClassificationTypes = $injector.get("thClassificationTypes");
 
     this.state = {
       showAutoclassifyTab: getAllUrlParams().has('autoclassify'),
@@ -128,6 +127,7 @@ class TabsPanel extends React.Component {
       fileBug, jobLogUrls, logParseStatus, suggestions, errors,
       bugSuggestionsLoading, selectedJob, perfJobDetail, repoName, jobRevision,
       classifications, togglePinBoardVisibility, isPinBoardVisible, pinBoard,
+      classificationTypes,
     } = this.props;
     const { showAutoclassifyTab, tabIndex } = this.state;
     const countPinnedJobs = pinBoard.pinnedJobs.length;
@@ -198,7 +198,7 @@ class TabsPanel extends React.Component {
           </TabPanel>}
           <TabPanel>
             <AnnotationsTab
-              classificationTypes={this.thClassificationTypes}
+              classificationTypes={classificationTypes}
               classifications={classifications}
               selectedJob={selectedJob}
             />
@@ -224,6 +224,7 @@ class TabsPanel extends React.Component {
 
 TabsPanel.propTypes = {
   $injector: PropTypes.object.isRequired,
+  classificationTypes: PropTypes.object.isRequired,
   jobDetails: PropTypes.array.isRequired,
   repoName: PropTypes.string.isRequired,
   classifications: PropTypes.array.isRequired,

@@ -23,7 +23,6 @@ class PinBoard extends React.Component {
     this.ThBugJobMapModel = $injector.get('ThBugJobMapModel');
 
     this.maxNumPinned = 500;
-
     this.state = {
       pinnedJobs: [],
       relatedBugs: [],
@@ -437,191 +436,198 @@ class PinBoard extends React.Component {
 
   render() {
     const {
-      selectedJob,
-      classificationTypes,
-      revisionList,
-      isLoggedIn,
-      isVisible,
+      selectedJob, revisionList, isLoggedIn, isVisible, classificationTypes,
     } = this.props;
     const {
       pinnedJobs,
       hasPinnedJobs,
       relatedBugs,
       failureClassificationId,
-      enteringBugNumber
+      enteringBugNumber,
+      // classificationOptions,
     } = this.state;
-    const classificationOptions = classificationTypes; // make options for the classification Select object
+
+    console.log("const PinBoard", classificationTypes.classificationOptions);
+    const classificationOptions = classificationTypes.classificationOptions.map(
+      opt => ({ value: opt.id, label: opt.name }), []
+    );
+    console.log("options", classificationOptions);
 
     return (
       <PinBoardContext.Provider value={pinnedJobs}>
-        <div className={isVisible ? '' : 'hidden'} >
-          <div id="pinned-job-list">
-            <div className="content">
-              {hasPinnedJobs && <span
-                className="pinboard-preload-txt"
-              >press spacebar to pin a selected job</span>}
-              {pinnedJobs.map(job => (
-                <span className="btn-group">
-                  <span
-                    className={`btn pinned-job ${this.getBtnClass(job)} ${selectedJob === job ? 'btn-lg selected-job' : 'btn-xs'}`}
-                    title={() => this.getHoverText(job)}
-                    onClick={this.viewJob(job)}
-                    data-job-id={job.job_id}
-                  >{job.job_type_symbol}</span>
-                  <span
-                    className={`btn btn-ltgray pinned-job-close-btn ${selectedJob === job ? 'btn-lg selected-job' : 'btn-xs'}`}
-                    onClick={() => this.unPinJob(job.id)}
-                    title="un-pin this job"
-                  ><i className="fa fa-times" /></span>
-                </span>
-              ))}
+        <div
+          id="pinboard-panel"
+          className={isVisible ? '' : 'hidden'}
+        >
+          <div id="pinboard-contents">
+            <div id="pinned-job-list">
+              <div className="content">
+                {hasPinnedJobs && <span
+                  className="pinboard-preload-txt"
+                >press spacebar to pin a selected job</span>}
+                {pinnedJobs.map(job => (
+                  <span className="btn-group">
+                    <span
+                      className={`btn pinned-job ${this.getBtnClass(job)} ${selectedJob === job ? 'btn-lg selected-job' : 'btn-xs'}`}
+                      title={() => this.getHoverText(job)}
+                      onClick={this.viewJob(job)}
+                      data-job-id={job.job_id}
+                    >{job.job_type_symbol}</span>
+                    <span
+                      className={`btn btn-ltgray pinned-job-close-btn ${selectedJob === job ? 'btn-lg selected-job' : 'btn-xs'}`}
+                      onClick={() => this.unPinJob(job.id)}
+                      title="un-pin this job"
+                    ><i className="fa fa-times" /></span>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Related bugs */}
-          <div id="pinboard-related-bugs">
-            <div className="content">
-              <a
-                onClick={() => this.toggleEnterBugNumber(!enteringBugNumber)}
-                className="pointable"
-                title="Add a related bug"
-              ><i className="fa fa-plus-square add-related-bugs-icon" /></a>
-              {!relatedBugs.length && <span
-                className="pinboard-preload-txt pinboard-related-bug-preload-txt"
-                onClick={() => {
-                  this.toggleEnterBugNumber(!enteringBugNumber);
-                  this.allowKeys();
-                }}
-              >click to add a related bug</span>}
-              {enteringBugNumber && <form
-                submit={this.saveEnteredBugNumber}
-                className="add-related-bugs-form"
-              >
-                <input
-                  id="related-bug-input"
-                  data-bug-input
-                  className="add-related-bugs-input"
-                  ng-model="$parent.newEnteredBugNumber"
-                  placeholder="enter bug number"
-                  ng-keypress="ctrlEnterSaves($event)"
-                  focus-me="focusInput"
-                />
-              </form>}
-              {relatedBugs.map(bug => (<span>
-                <span className="btn-group pinboard-related-bugs-btn">
-                  <a
-                    className="btn btn-xs related-bugs-link"
-                    title={bug.summary}
-                    href={() => this.getBugUrl(bug.id)}
-                    target="_blank"
-                    rel="noopener"
-                  ><em>{bug.id}</em></a>
-                  <span
-                    className="btn btn-ltgray btn-xs pinned-job-close-btn"
-                    onClick={() => this.removeBug(bug.id)}
-                    title="remove this bug"
-                  ><i className="fa fa-times" /></span>
-                </span>
-              </span>))}
-            </div>
-          </div>
-
-          {/* Classification dropdown */}
-          <div id="pinboard-classification">
-            <div className="pinboard-label">classification</div>
-            <div id="pinboard-classification-content" className="content">
-              <form onSubmit={this.completeClassification} className="form">
-                <Select
-                  id="pinboard-classification-select"
-                  value={failureClassificationId}
-                  options={classificationOptions}
-                  onChange={this.setClassificationId}
-                  clearable={false}
-                  bsSize="small"
-                />
-
-                {/* Classification comment */}
-                <div className="classification-comment-container">
+            {/* Related bugs */}
+            <div id="pinboard-related-bugs">
+              <div className="content">
+                <a
+                  onClick={() => this.toggleEnterBugNumber(!enteringBugNumber)}
+                  className="pointable"
+                  title="Add a related bug"
+                ><i className="fa fa-plus-square add-related-bugs-icon" /></a>
+                {!relatedBugs.length && <span
+                  className="pinboard-preload-txt pinboard-related-bug-preload-txt"
+                  onClick={() => {
+                    this.toggleEnterBugNumber(!enteringBugNumber);
+                    this.allowKeys();
+                  }}
+                >click to add a related bug</span>}
+                {enteringBugNumber && <form
+                  submit={this.saveEnteredBugNumber}
+                  className="add-related-bugs-form"
+                >
                   <input
-                    id="classification-comment"
-                    type="text"
-                    className="form-control add-classification-input"
-                    ng-model="classification.text"
-                    onClick={this.allowKeys}
-                    ng-paste="pasteSHA($event)"
-                    placeholder="click to add comment"
+                    id="related-bug-input"
+                    data-bug-input
+                    className="add-related-bugs-input"
+                    ng-model="$parent.newEnteredBugNumber"
+                    placeholder="enter bug number"
+                    ng-keypress="ctrlEnterSaves($event)"
+                    focus-me="focusInput"
                   />
-                  {/*blur-this*/}
-                  <div ng-if="classification.failure_classification_id === 2">
-                    <Select
-                      id="recent-choice"
-                      clearable={false}
-                      bsSize="small"
-                      ng-model="classification.recentChoice"
-                      ng-change="classification.text=classification.recentChoice"
-                    >
-                      <option value="0" selected disabled>Choose a recent
-                        commit
-                      </option>
-                      {revisionList.slice(0, 20).map(tip => (<option
-                        ng-repeat="tip in revisionList | limitTo:20"
-                        title="{{tip.title}}"
-                        value="{{tip.revision}}"
-                      >{tip.revision.slice(0, 12)} {tip.author}</option>))}
-                    </Select>
+                </form>}
+                {relatedBugs.map(bug => (<span>
+                  <span className="btn-group pinboard-related-bugs-btn">
+                    <a
+                      className="btn btn-xs related-bugs-link"
+                      title={bug.summary}
+                      href={() => this.getBugUrl(bug.id)}
+                      target="_blank"
+                      rel="noopener"
+                    ><em>{bug.id}</em></a>
+                    <span
+                      className="btn btn-ltgray btn-xs pinned-job-close-btn"
+                      onClick={() => this.removeBug(bug.id)}
+                      title="remove this bug"
+                    ><i className="fa fa-times" /></span>
+                  </span>
+                </span>))}
+              </div>
+            </div>
+
+            {/* Classification dropdown */}
+            <div id="pinboard-classification">
+              <div className="pinboard-label">classification</div>
+              <div id="pinboard-classification-content" className="content">
+                <form onSubmit={this.completeClassification} className="form">
+                  <Select
+                    id="pinboard-classification-select"
+                    className="classification-select"
+                    optionClassName="classification-option"
+                    value={failureClassificationId}
+                    options={classificationOptions}
+                    onChange={this.setClassificationId}
+                    clearable={false}
+                    bsSize="small"
+                  />
+
+                  {/* Classification comment */}
+                  <div className="classification-comment-container">
+                    <input
+                      id="classification-comment"
+                      type="text"
+                      className="form-control add-classification-input"
+                      ng-model="classification.text"
+                      onClick={this.allowKeys}
+                      ng-paste="pasteSHA($event)"
+                      placeholder="click to add comment"
+                    />
+                    {/*blur-this*/}
+                    {failureClassificationId === 2 && <div>
+                      <Select
+                        id="recent-choice"
+                        clearable={false}
+                        bsSize="small"
+                        ng-model="classification.recentChoice"
+                        ng-change="classification.text=classification.recentChoice"
+                      >
+                        <option value="0" selected disabled>Choose a recent
+                          commit
+                        </option>
+                        {revisionList.slice(0, 20).map(tip => (<option
+                          title={tip.title}
+                          value={tip.revision}
+                        >{tip.revision.slice(0, 12)} {tip.author}</option>))}
+                      </Select>
+                    </div>}
                   </div>
-                </div>
-              </form>
+                </form>
+              </div>
+            </div>
+
+            {/* Save UI */}
+            <div
+              id="pinboard-controls"
+              className="btn-group-vertical"
+              title={pinnedJobs.length ? '' : 'No pinned jobs'}
+            >
+              <div className="btn-group save-btn-group dropdown">
+                <button
+                  className="btn btn-light-bordered btn-xs save-btn"
+                  title="{{ saveUITitle('classification') }}"
+                  onClick={this.save}
+                  ng-disabled="!user.isLoggedIn || !canSaveClassifications()"
+                >save
+                </button>
+                <button
+                  className="btn btn-light-bordered btn-xs dropdown-toggle save-btn-dropdown"
+                  title="{{ !hasPinnedJobs() && !pinboardIsDirty() ? 'No pinned jobs' : 'Additional pinboard functions' }}"
+                  ng-disabled="!hasPinnedJobs() && !pinboardIsDirty()"
+                  type="button"
+                  data-toggle="dropdown"
+                >
+                  <span className="caret" />
+                </button>
+                <ul className="dropdown-menu save-btn-dropdown-menu">
+                  <li
+                    className="{{ !user.isLoggedIn ? 'disabled' : '' }}"
+                    title="{{ !user.isLoggedIn ? 'Not logged in' : 'Repeat the pinned jobs'}}"
+                  >
+                    <a
+                      className="dropdown-item"
+                      onClick={() => !isLoggedIn || this.retriggerAllPinnedJobs}
+                    >Retrigger all</a></li>
+                  <li
+                    className="{{ canCancelAllPinnedJobs() ? '' : 'disabled' }}"
+                    title="{{ cancelAllPinnedJobsTitle() }}"
+                  >
+                    <a
+                      className="dropdown-item"
+                      onClick={() => this.canCancelAllPinnedJobs && this.cancelAllPinnedJobs}
+                    >Cancel all</a>
+                  </li>
+                  <li><a className="dropdown-item" onClick={this.unPinAll}>Clear
+                    all</a></li>
+                </ul>
+              </div>
             </div>
           </div>
-
-          {/* Save UI */}
-          <div
-            id="pinboard-controls"
-            className="btn-group-vertical"
-            title={pinnedJobs.length ? '' : 'No pinned jobs'}
-          >
-            <div className="btn-group save-btn-group dropdown">
-              <button
-                className="btn btn-light-bordered btn-xs save-btn"
-                title="{{ saveUITitle('classification') }}"
-                onClick={this.save}
-                ng-disabled="!user.isLoggedIn || !canSaveClassifications()"
-              >save
-              </button>
-              <button
-                className="btn btn-light-bordered btn-xs dropdown-toggle save-btn-dropdown"
-                title="{{ !hasPinnedJobs() && !pinboardIsDirty() ? 'No pinned jobs' : 'Additional pinboard functions' }}"
-                ng-disabled="!hasPinnedJobs() && !pinboardIsDirty()"
-                type="button"
-                data-toggle="dropdown"
-              >
-                <span className="caret" />
-              </button>
-              <ul className="dropdown-menu save-btn-dropdown-menu">
-                <li
-                  className="{{ !user.isLoggedIn ? 'disabled' : '' }}"
-                  title="{{ !user.isLoggedIn ? 'Not logged in' : 'Repeat the pinned jobs'}}"
-                >
-                  <a
-                    className="dropdown-item"
-                    onClick={() => !isLoggedIn || this.retriggerAllPinnedJobs}
-                  >Retrigger all</a></li>
-                <li
-                  className="{{ canCancelAllPinnedJobs() ? '' : 'disabled' }}"
-                  title="{{ cancelAllPinnedJobsTitle() }}"
-                >
-                  <a
-                    className="dropdown-item"
-                    onClick={() => this.canCancelAllPinnedJobs && this.cancelAllPinnedJobs}
-                  >Cancel all</a>
-                </li>
-                <li><a className="dropdown-item" onClick={this.unPinAll}>Clear
-                  all</a></li>
-              </ul>
-            </div>
-          </div>
-
         </div>
       </PinBoardContext.Provider>
     );
@@ -630,11 +636,11 @@ class PinBoard extends React.Component {
 
 PinBoard.propTypes = {
   $injector: PropTypes.object.isRequired,
+  classificationTypes: PropTypes.object.isRequired,
   isLoggedIn: PropTypes.bool.isRequired,
   isVisible: PropTypes.bool.isRequired,
   email: PropTypes.string,
   selectedJob: PropTypes.object,
-  classificationTypes: PropTypes.object,
   revisionList: PropTypes.array,
 };
 
