@@ -5,6 +5,8 @@
   color: #252c33;
   line-height: 22px;
   cursor: pointer;
+  border-radius: 0;
+  padding: 3px 10px 7px 14px;
 }
 
 .pinboard-btn-text {
@@ -57,6 +59,7 @@
   flex: auto;
   display: flex;
   flex-flow: row;
+  min-height: 100px;
 }
 
 #pinboard-panel .header {
@@ -166,26 +169,31 @@
   color: black;
 }
 
-.classification-select,
-.classification-select .Select-control {
+#pinboard-classification-content .form-group {
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+
+select#pinboard-classification-select.classification-select,
+select#pinboard-revision-select.classification-select {
   width: 177px;
   height: 20px;
   font-size: 12px;
-  margin-bottom: 3px;
+  padding: 0;
 }
 
-.classification-select.Select .Select-placeholder,
-.classification-select.Select .Select-value,
-.classification-select.Select .Select-value-label,
-.classification-select.Select .Select-input {
-  line-height: 20px !important;
-  height: 20px;
-}
+/*.classification-select.Select .Select-placeholder,*/
+/*.classification-select.Select .Select-value,*/
+/*.classification-select.Select .Select-value-label,*/
+/*.classification-select.Select .Select-input {*/
+  /*line-height: 20px !important;*/
+  /*height: 20px;*/
+/*}*/
 
-.classification-option {
-  line-height: 25px !important;
-  height: 25px;
-}
+/*.classification-option {*/
+  /*line-height: 25px !important;*/
+  /*height: 25px;*/
+/*}*/
 
 
 

@@ -3,14 +3,8 @@ import React from 'react';
 export const PinBoardContext = React.createContext({
   pinnedJobs: [],
   relatedBugs: [],
-  pinJob: (job) => {
-    this.pinnedJobs[job.id] = job;
-    // this.pulsePinCount();
-  },
-  addBug: (bug, job) => {
-    this.relatedBugs[bug.id] = bug;
-    this.pinJob(job);
-  }
+  pinJob: () => { console.log("pinJob raw"); },
+  addBug: () => { console.log("addBug raw"); },
 });
 
 export function withPinBoard(Component) {

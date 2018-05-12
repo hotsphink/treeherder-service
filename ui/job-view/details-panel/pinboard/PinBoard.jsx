@@ -1,13 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { Form, FormGroup, Input } from 'reactstrap';
 import $ from 'jquery';
 import _ from 'lodash';
-import Select from 'react-select';
 import Mousetrap from "mousetrap";
 
 import { getBtnClass, getStatus } from '../../../helpers/jobHelper';
 import { thEvents, thPinboardCountError } from "../../../js/constants";
-import { PinBoardContext } from "../../../context/PinBoardContext";
+import {
+  PinBoardContext,
+  withPinBoard
+} from "../../../context/PinBoardContext";
 import { with$injector } from '../../../context/InjectorContext';
 
 class PinBoard extends React.Component {
@@ -23,17 +26,21 @@ class PinBoard extends React.Component {
     this.ThBugJobMapModel = $injector.get('ThBugJobMapModel');
 
     this.maxNumPinned = 500;
+
     this.state = {
-      pinnedJobs: [],
-      relatedBugs: [],
-      hasPinnedJobs: false,
       failureClassificationId: 0,
+      failureClassificationComment: '',
       enteringBugNumber: false,
       classification: {},
+      pinnedJobs: [],
+      relatedBugs: [],
+      pinJob: this.pinJob,
+      addBug: this.addBug,
     };
   }
 
   componentDidMount() {
+
     this.$rootScope.$on(thEvents.toggleJobPin, (event, job) => {
       this.toggleJobPin(job);
     });
@@ -68,11 +75,20 @@ class PinBoard extends React.Component {
   getHoverText(job) {
     const duration = Math.round((job.end_timestamp - job.start_timestamp) / 60);
     const status = getStatus(job);
+
     return job.job_type_name + " - " + status + " - " + duration + "mins";
   }
 
   getBtnClass(job) {
     getBtnClass(getStatus(job), job.failure_classification_id);
+  }
+
+  setClassificationId(evt) {
+    this.setState({ failureClassificationId: parseInt(evt.target.value) });
+  }
+
+  setClassificationText(evt) {
+    this.setState({ failureClassificationComment: evt.target.value });
   }
 
   toggleJobPin(job) {
@@ -95,6 +111,8 @@ class PinBoard extends React.Component {
 
   pinJob(job) {
     const { pinnedJobs, spaceRemaining } = this.state;
+
+    console.log("do pinJob", job);
 
     if (spaceRemaining > 0) {
       this.setState({ pinnedJobs: { ...pinnedJobs, [job.id]: job } });
@@ -439,22 +457,12 @@ class PinBoard extends React.Component {
       selectedJob, revisionList, isLoggedIn, isVisible, classificationTypes,
     } = this.props;
     const {
-      pinnedJobs,
-      hasPinnedJobs,
-      relatedBugs,
-      failureClassificationId,
-      enteringBugNumber,
-      // classificationOptions,
+      failureClassificationId, failureClassificationComment,
+      enteringBugNumber, pinnedJobs, relatedBugs
     } = this.state;
 
-    console.log("const PinBoard", classificationTypes.classificationOptions);
-    const classificationOptions = classificationTypes.classificationOptions.map(
-      opt => ({ value: opt.id, label: opt.name }), []
-    );
-    console.log("options", classificationOptions);
-
     return (
-      <PinBoardContext.Provider value={pinnedJobs}>
+      <PinBoardContext.Provider value={this.state}>
         <div
           id="pinboard-panel"
           className={isVisible ? '' : 'hidden'}
@@ -462,7 +470,7 @@ class PinBoard extends React.Component {
           <div id="pinboard-contents">
             <div id="pinned-job-list">
               <div className="content">
-                {hasPinnedJobs && <span
+                {!!pinnedJobs.length && <span
                   className="pinboard-preload-txt"
                 >press spacebar to pin a selected job</span>}
                 {pinnedJobs.map(job => (
@@ -535,49 +543,55 @@ class PinBoard extends React.Component {
             <div id="pinboard-classification">
               <div className="pinboard-label">classification</div>
               <div id="pinboard-classification-content" className="content">
-                <form onSubmit={this.completeClassification} className="form">
-                  <Select
-                    id="pinboard-classification-select"
-                    className="classification-select"
-                    optionClassName="classification-option"
-                    value={failureClassificationId}
-                    options={classificationOptions}
-                    onChange={this.setClassificationId}
-                    clearable={false}
-                    bsSize="small"
-                  />
-
+                <Form onSubmit={this.completeClassification} className="form">
+                  <FormGroup>
+                    <Input
+                      type="select"
+                      name="failureClassificationId"
+                      id="pinboard-classification-select"
+                      className="classification-select"
+                      onChange={evt => this.setClassificationId(evt)}
+                    >
+                      {classificationTypes.classificationOptions.map(opt => (
+                        <option value={opt.id} key={opt.id}>{opt.name}</option>
+                      ))}
+                    </Input>
+                  </FormGroup>
                   {/* Classification comment */}
                   <div className="classification-comment-container">
                     <input
                       id="classification-comment"
                       type="text"
                       className="form-control add-classification-input"
-                      ng-model="classification.text"
+                      onChange={evt => this.setClassificationText(evt)}
                       onClick={this.allowKeys}
-                      ng-paste="pasteSHA($event)"
+                      onPaste={this.pasteSHA}
                       placeholder="click to add comment"
+                      value={failureClassificationComment}
                     />
                     {/*blur-this*/}
                     {failureClassificationId === 2 && <div>
-                      <Select
-                        id="recent-choice"
-                        clearable={false}
-                        bsSize="small"
-                        ng-model="classification.recentChoice"
-                        ng-change="classification.text=classification.recentChoice"
-                      >
-                        <option value="0" selected disabled>Choose a recent
-                          commit
-                        </option>
-                        {revisionList.slice(0, 20).map(tip => (<option
-                          title={tip.title}
-                          value={tip.revision}
-                        >{tip.revision.slice(0, 12)} {tip.author}</option>))}
-                      </Select>
+                      <FormGroup>
+                        <Input
+                          id="pinboard-revision-select"
+                          className="classification-select"
+                          type="select"
+                          defaultValue={0}
+                          onChange={evt => this.setClassificationText(evt)}
+                        >
+                          <option value="0" disabled>Choose a recent
+                            commit
+                          </option>
+                          {revisionList.slice(0, 20).map(tip => (<option
+                            title={tip.title}
+                            value={tip.revision}
+                            key={tip.revision}
+                          >{tip.revision.slice(0, 12)} {tip.author}</option>))}
+                        </Input>
+                      </FormGroup>
                     </div>}
                   </div>
-                </form>
+                </Form>
               </div>
             </div>
 
@@ -590,7 +604,7 @@ class PinBoard extends React.Component {
               <div className="btn-group save-btn-group dropdown">
                 <button
                   className="btn btn-light-bordered btn-xs save-btn"
-                  title="{{ saveUITitle('classification') }}"
+                  title={this.saveUITitle('classification')}
                   onClick={this.save}
                   ng-disabled="!user.isLoggedIn || !canSaveClassifications()"
                 >save
@@ -651,4 +665,4 @@ PinBoard.defaultProps = {
   revisionList: [],
 };
 
-export default with$injector(PinBoard);
+export default with$injector(withPinBoard(PinBoard));

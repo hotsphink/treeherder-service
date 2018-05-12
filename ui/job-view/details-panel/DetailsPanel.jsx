@@ -58,6 +58,15 @@ class DetailsPanel extends React.Component {
     });
   }
 
+  getRevisionTips() {
+    console.log("pushArray", this.ThResultSetStore.getPushArray());
+    return this.ThResultSetStore.getPushArray().map(push => ({
+      revision: push.revision,
+      author: push.author,
+      title: push.revisions[0].comments.split('\n')[0]
+    }));
+  }
+
   togglePinBoardVisibility() {
       this.setState({ isPinBoardVisible: !this.state.isPinBoardVisible });
   }
@@ -224,20 +233,6 @@ class DetailsPanel extends React.Component {
     });
   }
 
-
-  // getRevisionTips(list) {
-  //     list.splice(0, list.length);
-  //     const rsArr = ThResultSetStore.getPushArray();
-  //     rsArr.forEach((rs) => {
-  //         list.push({
-  //             revision: rs.revision,
-  //             author: rs.author,
-  //             title: rs.revisions[0].comments.split('\n')[0]
-  //         });
-  //     });
-  // };
-
-
   render() {
     const { selectedJob, repoName, $injector, user, currentRepo } = this.props;
     const {
@@ -267,12 +262,13 @@ class DetailsPanel extends React.Component {
             resizer-height="6"
             resizer-bottom="#info-panel"
           />
-          <PinBoard
+          {isPinBoardVisible && <PinBoard
             id="pinboard-panel"
             isVisible={isPinBoardVisible}
             isLoggedIn={user.isLoggedIn || false}
             classificationTypes={this.thClassificationTypes}
-          />
+            revisionList={this.getRevisionTips()}
+          />}
           {!!selectedJob && <div id="info-panel-content">
             <SummaryPanel
               repoName={repoName}
